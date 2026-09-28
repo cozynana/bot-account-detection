@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deteksi Akun Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #007bff; 
+            color: black;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #000000;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        .form-group input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Deteksi Akun Bot</h1>
+        <p><b>Isikan data akun</b></p>
+        <form id="predict-form">
+            <div class="form-group">
+                <label for="followers">Jumlah Followers:</label>
+                <input type="number" id="followers" placeholder="Masukkan jumlah followers" required>
+            </div>
+            <div class="form-group">
+                <label for="following">Jumlah Following:</label>
+                <input type="number" id="following" placeholder="Masukkan jumlah following" required>
+            </div>
+            <div class="form-group">
+                <label for="tweets">Jumlah Tweets:</label>
+                <input type="number" id="tweets" placeholder="Masukkan jumlah tweet" required>
+            </div>
+            <div class="form-group">
+                <label for="joined_month">Bulan Bergabung:</label>
+                <input type="number" id="joined_month" min="1" max="12" placeholder="Masukkan bulan (1-12)" required>
+            </div>
+            <div class="form-group">
+                <label for="joined_year">Tahun Bergabung:</label>
+                <input type="number" id="joined_year" min="2006" max="2024" placeholder="Masukkan tahun bergabung" required>
+            </div>
+            <button type="button" onclick="makePrediction()">Deteksi</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function calculateAccountAge(joinedMonth, joinedYear) {
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentYear = currentDate.getFullYear();
+
+            let yearDiff = currentYear - joinedYear;
+            let monthDiff = currentMonth - joinedMonth;
+
+            if (monthDiff < 0) {
+                yearDiff -= 1;
+                monthDiff += 12;
+            }
+
+            return yearDiff + (monthDiff / 12); 
+        }
+
+        async function makePrediction() {
+            const followers = parseInt(document.getElementById('followers').value, 10);
+            const following = parseInt(document.getElementById('following').value, 10);
+            const tweets = parseInt(document.getElementById('tweets').value, 10);
+            const joinedMonth = parseInt(document.getElementById('joined_month').value, 10);
+            const joinedYear = parseInt(document.getElementById('joined_year').value, 10);
+
+            if (!joinedMonth || !joinedYear) {
+                alert("Harap masukkan bulan dan tahun bergabung akun.");
+                return;
+            }
+
+            // Hitung atribut tambahan
+            const accountAge = calculateAccountAge(joinedMonth, joinedYear);
+            const followRatio = followers / (following || 1); // Hindari pembagian dengan 0
+            const tweetsPerYear = tweets / (accountAge || 1); // Hindari pembagian dengan 0
+
+            // Kirim data ke backend
+            const response = await fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    features: [followers, following, tweets, accountAge, followRatio, tweetsPerYear]
+                })
+            });
+
+            const result = await response.json();
+            document.getElementById('result').innerText = `Hasil Klasifikasi: ${result.prediction}`;
+        }
+    </script>
+</body>
+</html>
